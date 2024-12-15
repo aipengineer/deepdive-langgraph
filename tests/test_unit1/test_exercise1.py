@@ -31,7 +31,7 @@ def test_exercise_1_1(student_submission):
                     elif state["messages"][0].content == "How are you?":
                         assert state["messages"][0].content == "Goodbye!"
                     else:
-                        assert False, "Unexpected message content"
+                        raise AssertionError("Unexpected message content")
             else:
                 raise ValueError(f"Unknown step: {name}")
         # For debugging, you can view the full execution in the LangSmith app at the

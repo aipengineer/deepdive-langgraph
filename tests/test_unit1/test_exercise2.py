@@ -33,7 +33,7 @@ def test_exercise_1_2(student_submission):
                     elif state["messages"][0].content == "How are you?":
                         assert state["messages"][0].content == "Goodbye!"
                     else:
-                        assert False, "Unexpected message content"
+                        raise AssertionError("Unexpected message content")
             elif name == "message_windowing":
                 assert len(state["messages"]) <= state["window_size"]
             elif name == "summary_generation":

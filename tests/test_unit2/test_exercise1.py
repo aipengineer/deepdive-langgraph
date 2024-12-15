@@ -43,8 +43,8 @@ def test_exercise_2_1(student_submission):
                 # Check that the tool output is valid JSON
                 try:
                     json.loads(state["tool_outputs"][0])
-                except json.JSONDecodeError:
-                    assert False, "Tool output is not valid JSON"
+                except json.JSONDecodeError as err:
+                    raise AssertionError("Tool output is not valid JSON") from err
             elif name == "result_processor":
                 logging.debug("Checking result processor")
                 # Check that the tool output is in the messages
