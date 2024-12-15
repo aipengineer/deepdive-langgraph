@@ -8,14 +8,15 @@ This solution implements a multi-tool agent that can:
 3. Process results and maintain conversation flow
 """
 
-from typing import Annotated, Any, TypedDict, Literal
-from datetime import datetime
 import math
+from datetime import datetime
+from typing import Annotated, Any, Literal, TypedDict
+
 import numexpr
+from langchain_community.tools import TavilySearchResults
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.tools import tool
-from langchain_community.tools import TavilySearchResults
-from langgraph.graph import START, StateGraph, END
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph
 
@@ -32,7 +33,7 @@ def calculator(expression: str) -> str:
         )
         return str(float(result))
     except Exception as e:
-        return f"Error evaluating expression: {str(e)}"
+        return f"Error evaluating expression: {e!s}"
 
 
 @tool
@@ -45,6 +46,7 @@ def check_weather(location: str, at_time: datetime | None = None) -> str:
 
 class State(TypedDict):
     """State for the multi-tool agent."""
+
     messages: Annotated[list[BaseMessage], add_messages]
     available_tools: list[Any]
     tool_usage: dict[str, int]
@@ -56,7 +58,10 @@ def get_next_step(state: State) -> Literal["tool_selector", "end"]:
     if not state.get("messages"):
         return "end"
     last_message = state["messages"][-1]
-    if isinstance(last_message, HumanMessage) and "thanks" in last_message.content.lower():
+    if (
+        isinstance(last_message, HumanMessage)
+        and "thanks" in last_message.content.lower()
+    ):
         return "end"
     return "tool_selector"
 
@@ -91,7 +96,10 @@ def tool_selector(state: State) -> State:
         # Determine appropriate tool
         if "weather" in message:
             tool_name = "check_weather"
-        elif any(word in message for word in ["calculate", "compute", "solve", "+", "-", "*", "/"]):
+        elif any(
+            word in message
+            for word in ["calculate", "compute", "solve", "+", "-", "*", "/"]
+        ):
             tool_name = "calculator"
         else:
             tool_name = "TavilySearchResults"
@@ -104,7 +112,8 @@ def tool_selector(state: State) -> State:
             return {
                 "messages": [
                     HumanMessage(
-                        content=f"Rate limit exceeded for {tool_name}. Please try a different query."
+                        content=f"Rate limit exceeded for {tool_name}. "
+                        f"Please try a different query."
                     )
                 ]
             }
@@ -125,7 +134,9 @@ def llm_node(state: State) -> State:
         if "thanks" in last_message.content.lower():
             return {
                 "messages": [
-                    HumanMessage(content="You're welcome! Let me know if you need anything else.")
+                    HumanMessage(
+                        content="You're welcome! Let me know if you need anything else."
+                    )
                 ]
             }
         return state
@@ -155,14 +166,15 @@ def tool_executor(state: State) -> State:
         else:
             # Use TavilySearchResults for general queries
             tool = next(
-                tool for tool in state["available_tools"]
+                tool
+                for tool in state["available_tools"]
                 if isinstance(tool, TavilySearchResults)
             )
             output = tool.invoke({"query": message})
 
         return {"tool_outputs": [output]}
     except Exception as e:
-        return {"tool_outputs": [f"Error executing {tool_name}: {str(e)}"]}
+        return {"tool_outputs": [f"Error executing {tool_name}: {e!s}"]}
 
 
 def result_processor(state: State) -> State:
@@ -195,7 +207,7 @@ def create_agent() -> CompiledStateGraph:
         path_map={
             "tool_selector": "tool_selector",
             "end": END,
-        }
+        },
     )
 
     # Set entry point

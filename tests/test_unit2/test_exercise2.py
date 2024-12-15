@@ -2,11 +2,11 @@
 Tests for Exercise 2.2 - Multi-Tool Agent Solution
 """
 
-import pytest
 import logging
 from typing import Any
+
+import pytest
 from langchain_core.messages import HumanMessage
-from langgraph.graph import END
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -129,7 +129,7 @@ async def test_tool_executor(student_submission: Any) -> None:
     calc_state = {
         "tool_name": "calculator",
         "messages": [HumanMessage(content="Calculate 2 + 2")],
-        "available_tools": [student_submission.calculator]
+        "available_tools": [student_submission.calculator],
     }
     result = tool_executor(calc_state)
     assert "tool_outputs" in result
@@ -139,7 +139,7 @@ async def test_tool_executor(student_submission: Any) -> None:
     weather_state = {
         "tool_name": "check_weather",
         "messages": [HumanMessage(content="What's the weather in Tokyo?")],
-        "available_tools": [student_submission.check_weather]
+        "available_tools": [student_submission.check_weather],
     }
     result = tool_executor(weather_state)
     assert "tool_outputs" in result
@@ -174,21 +174,21 @@ async def test_full_conversation(student_submission: Any) -> None:
     assert "How can I help you" in initial_result["messages"][-1].content
 
     # Test calculator usage
-    calc_result = await graph.ainvoke({
-        "messages": [HumanMessage(content="Calculate 25 * 4")]
-    })
+    calc_result = await graph.ainvoke(
+        {"messages": [HumanMessage(content="Calculate 25 * 4")]}
+    )
     assert "100" in str(calc_result["messages"][-1].content)
 
     # Test weather query
-    weather_result = await graph.ainvoke({
-        "messages": [HumanMessage(content="What's the weather in Paris?")]
-    })
+    weather_result = await graph.ainvoke(
+        {"messages": [HumanMessage(content="What's the weather in Paris?")]}
+    )
     assert "Paris" in str(weather_result["messages"][-1].content)
 
     # Test conversation ending
-    end_result = await graph.ainvoke({
-        "messages": [HumanMessage(content="Thanks for your help!")]
-    })
+    end_result = await graph.ainvoke(
+        {"messages": [HumanMessage(content="Thanks for your help!")]}
+    )
     assert "welcome" in end_result["messages"][-1].content.lower()
 
 

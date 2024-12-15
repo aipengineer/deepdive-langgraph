@@ -3,22 +3,21 @@
 
 Exercise 2.2 - "Multi-Tool Agent"
 
-Your task is to build a multi-tool agent that can handle different types of queries by selecting
-and using appropriate tools. The agent should be able to:
+Your task is to build a multi-tool agent that can handle different
+types of queries by selecting and using appropriate tools.
+The agent should be able to:
 1. Use a search tool (TavilySearchResults) for general queries
 2. Perform mathematical calculations using a calculator tool
 3. Provide weather information using a weather checking tool
 4. Manage tool usage with rate limits
 """
 
-from typing import Annotated, Any, TypedDict, Sequence, Literal, cast
 from datetime import datetime
-import math
-import numexpr
+from typing import Annotated, Any, Literal, TypedDict
+
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.tools import tool
-from langchain_community.tools import TavilySearchResults
-from langgraph.graph import START, StateGraph, END
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph
 
@@ -50,6 +49,7 @@ def check_weather(location: str, at_time: datetime | None = None) -> str:
 
 class State(TypedDict):
     """State for the multi-tool agent."""
+
     messages: Annotated[list[BaseMessage], add_messages]
     available_tools: list[Any]
     tool_usage: dict[str, int]
@@ -68,7 +68,10 @@ def get_next_step(state: State) -> Literal["tool_selector", "end"]:
     if not state.get("messages"):
         return "end"
     last_message = state["messages"][-1]
-    if isinstance(last_message, HumanMessage) and "thanks" in last_message.content.lower():
+    if (
+        isinstance(last_message, HumanMessage)
+        and "thanks" in last_message.content.lower()
+    ):
         return "end"
     return "tool_selector"
 
@@ -149,7 +152,7 @@ def create_agent() -> CompiledStateGraph:
         path_map={
             "tool_selector": "tool_selector",
             "end": END,
-        }
+        },
     )
 
     # Set entry point

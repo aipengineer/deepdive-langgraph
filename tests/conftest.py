@@ -1,7 +1,7 @@
-import os
 import sys
-import pytest
 from pathlib import Path
+
+import pytest
 
 # Add the solutions directory to the Python path
 solutions_path = Path(__file__).parent.parent / "solutions"
@@ -19,14 +19,11 @@ def get_solution_module(request):
 
     # Extract unit and exercise numbers from test path
     # e.g., from 'test_unit1/test_exercise1.py' get 'unit1' and 'exercise1'
-    unit_name = test_path.parent.name.replace('test_', '')
-    exercise_name = test_path.stem.replace('test_', '')
+    unit_name = test_path.parent.name.replace("test_", "")
+    exercise_name = test_path.stem.replace("test_", "")
 
     # Import the corresponding solution module
-    solution_module = __import__(
-        f"{unit_name}.{exercise_name}",
-        fromlist=['*']
-    )
+    solution_module = __import__(f"{unit_name}.{exercise_name}", fromlist=["*"])
 
     return solution_module
 
