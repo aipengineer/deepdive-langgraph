@@ -15,7 +15,7 @@ def test_exercise_1_1(student_submission):
     # For this exercise, the student doesn't need to provide any inputs
     # (we will inject them ourselves)
     inputs = {}
-    for step in graph.stream(inputs, return_all=True, stream_mode="debug"):
+    for step in graph.stream(inputs, stream_to_stdout=True):
         for name, state in step.items():
             logger.debug(f"Checking step: {name}")
             if name == "llm":
