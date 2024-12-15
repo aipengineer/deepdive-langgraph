@@ -1,54 +1,31 @@
-from langchain_core.messages import HumanMessage, ChatMessage
+import logging
 
-# Import the graph from the exercise file
-from src.exercises.unit1.exercise3 import graph
+from langchain_core.messages import HumanMessage
 
-def test_exercise3():
-    # Test that the chat bot is able to respond to the user coherently
-    # We can invoke the graph with a human message
-    result = graph.invoke({"messages": [HumanMessage(content="Hello!")], "classification": "not weather", "confidence": 0.8})
-    # The result should be a dict
-    assert isinstance(result, dict)
-    # The result should have a key "messages"
-    assert "messages" in result
-    # The messages should be a list
-    assert isinstance(result["messages"], list)
-    # The list should not be empty
-    assert len(result["messages"]) > 0
-    # The last message should be a ChatMessage
-    assert isinstance(result["messages"][-1], ChatMessage)
-    # The message content should not be empty
-    assert result["messages"][-1].content
+# The logger is used to check that the nodes
+# are doing the right work
+logger = logging.getLogger(__name__)
 
-    # Test that the graph state is updated with the correct classification
-    assert result["classification"] == "not weather"
-    assert result["confidence"] == 0.9
 
-    # Test that the graph routes the message to the correct node based on the classification
-    assert result["messages"][-1].content == "The weather is not nice today. Last message: Hello!"
+def test_exercise_1_3(student_submission):
+    """Check that the student has implemented the conditional router correctly."""
+    try:
+        graph = student_submission.graph
+    except AttributeError:
+        # Try to be slightly more robust in case the student forgets to name it 'graph'
+        graph = student_submission
 
-    # Test that the graph is able to handle edge cases, such as when the classification is not valid
-    result = graph.invoke({"messages": [HumanMessage(content="What's the weather like in SF?")], "classification": "invalid", "confidence": 0.8})
-    assert result["messages"][-1].content == "I'm sorry, I don't understand."
+    # Test case 1: Greeting
+    inputs = {"messages": [HumanMessage(content="Hello")]}
+    state = graph.invoke(inputs)
+    assert state["messages"][-1].content == "Hello there!"
 
-    # We can invoke the graph with a human message
-    result = graph.invoke({"messages": [HumanMessage(content="What's the weather like in SF?")]})
-    # The result should be a dict
-    assert isinstance(result, dict)
-    # The result should have a key "messages"
-    assert "messages" in result
-    # The messages should be a list
-    assert isinstance(result["messages"], list)
-    # The list should not be empty
-    assert len(result["messages"]) > 0
-    # The last message should be a ChatMessage
-    assert isinstance(result["messages"][-1], ChatMessage)
-    # The message content should not be empty
-    assert result["messages"][-1].content
+    # Test case 2: Help
+    inputs = {"messages": [HumanMessage(content="I need help")]}
+    state = graph.invoke(inputs)
+    assert state["messages"][-1].content == "How can I help you?"
 
-    # Test that the graph state is updated with the correct classification
-    assert result["classification"] == "weather"
-    assert result["confidence"] == 0.9
-
-    # Test that the graph routes the message to the correct node based on the classification
-    assert result["messages"][-1].content == "The weather is nice today. Last message: What's the weather like in SF?"
+    # Test case 3: Unknown
+    inputs = {"messages": [HumanMessage(content="Foo bar")]}
+    state = graph.invoke(inputs)
+    assert state["messages"][-1].content == "I don't understand."

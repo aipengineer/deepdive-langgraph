@@ -1,5 +1,6 @@
-from typing import Annotated, Optional, Any
+from typing import Annotated, TypedDict
 
+from langchain.tools import TavilySearch
 from langchain_core.messages import (
     AIMessage,
     ChatMessage,
@@ -7,13 +8,11 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from langchain.tools import TavilySearch
 from langchain_openai import ChatOpenAI
-from langgraph.graph import END, START, StateGraph
+from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from pydantic import BaseModel, Field, validator
-from typing_extensions import TypedDict
 
 
 # 1. Define the expected Tool Input schema using Pydantic
@@ -31,7 +30,7 @@ class TavilySearchInput(BaseModel):
 # Define the state for the agent
 class State(TypedDict):
     messages: Annotated[list, add_messages]
-    tool_code: Optional[str]
+    tool_code: str | None
 
 
 # Initialize the LLM
@@ -131,7 +130,9 @@ def tool_result_processor(state: State) -> State:
             search_results = last_message.content
 
             # Format the output for the user
-            formatted_output = f"Here are some search results I found:\n\n{search_results}"
+            formatted_output = (
+                f"Here are some search results I found:\n\n{search_results}"
+            )
 
             return {"messages": [AIMessage(content=formatted_output)]}
         except Exception:
@@ -146,9 +147,7 @@ def tool_result_processor(state: State) -> State:
                 ]
             }
     else:
-        return {
-            "messages": [AIMessage(content="I'm sorry, I don't understand.")]
-        }
+        return {"messages": [AIMessage(content="I'm sorry, I don't understand.")]}
 
 
 graph_builder.add_node("llm", llm_node)

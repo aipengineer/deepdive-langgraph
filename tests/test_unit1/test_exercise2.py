@@ -1,28 +1,52 @@
-from langchain_core.messages import HumanMessage, ChatMessage
+import logging
 
-# Import the graph from the exercise file
-from src.exercises.unit1.exercise2 import graph
+# The logger is used to check that the nodes
+# are doing the right work
+logger = logging.getLogger(__name__)
 
-def test_exercise2():
-    # Test that the chat bot is able to respond to the user coherently over multiple turns.
-    # We can invoke the graph with a human message
-    result = graph.invoke({"messages": [HumanMessage(content="Hello!")], "summary": "N/A", "window_size": 5})
-    # The result should be a dict
-    assert isinstance(result, dict)
-    # The result should have a key "messages"
-    assert "messages" in result
-    # The messages should be a list
-    assert isinstance(result["messages"], list)
-    # The list should not be empty
-    assert len(result["messages"]) > 0
-    # The last message should be a ChatMessage
-    assert isinstance(result["messages"][-1], ChatMessage)
-    # The message content should not be empty
-    assert result["messages"][-1].content
 
-    # Continue the conversation coherently
-    result = graph.invoke({**result, "messages": [HumanMessage(content="My name is Harrison.")]})
-    assert "Harrison" in result["messages"][-1].content
-
-    result = graph.invoke({**result, "messages": [HumanMessage(content="What's the weather like in SF?")]})
-    assert "weather" in result["messages"][-1].content
+def test_exercise_1_2(student_submission):
+    """Check that the student has implemented the message memory correctly."""
+    try:
+        graph = student_submission.graph
+    except AttributeError:
+        # Try to be slightly more robust in case the student forgets to name it 'graph'
+        graph = student_submission
+    # For this exercise, the student doesn't need to provide any inputs
+    # (we will inject them ourselves)
+    inputs = {}
+    for step in graph.stream(inputs, return_all=True, stream_mode="debug"):
+        for name, state in step.items():
+            logger.debug(f"Checking step: {name}")
+            if name == "llm_response":
+                if not state.get("messages"):
+                    logging.debug("First time, no messages")
+                    assert len(state["messages"]) == 1
+                    assert state["messages"][0].content == "Hello!"
+                    assert state["summary"] == ""
+                    assert state["window_size"] == 3
+                else:
+                    logging.debug("Second time, should have messages now")
+                    assert len(state["messages"]) == 1
+                    if state["messages"][0].content == "Hello!":
+                        assert state["messages"][0].content == "How are you?"
+                    elif state["messages"][0].content == "How are you?":
+                        assert state["messages"][0].content == "Goodbye!"
+                    else:
+                        assert False, "Unexpected message content"
+            elif name == "message_windowing":
+                assert len(state["messages"]) <= state["window_size"]
+            elif name == "summary_generation":
+                if len(state["messages"]) > 2:
+                    assert state["summary"] == "Conversation summary: ..."
+                else:
+                    assert state["summary"] == ""
+            else:
+                raise ValueError(f"Unknown step: {name}")
+        # For debugging, you can view the full execution in the LangSmith app at the
+        # provided URL
+        # print(f"Step: {step}")
+    # Check that the final output is in the correct format
+    # (for this exercise, the format is unimportant)
+    final_output = graph.invoke(inputs)
+    assert final_output

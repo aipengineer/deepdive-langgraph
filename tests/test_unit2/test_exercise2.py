@@ -3,6 +3,7 @@ from langchain_core.messages import HumanMessage
 # Import the graph from the exercise file
 from src.exercises.unit2.exercise2 import graph
 
+
 def test_exercise2():
     # Initialize the conversation with a greeting
     result = graph.invoke(
@@ -68,7 +69,4 @@ def test_exercise2():
             "messages": [HumanMessage(content="What is the capital of France?")],
         }
     )
-    assert (
-        "I've reached the usage limit for search"
-        in result["messages"][-1].content
-    )
+    assert "I've reached the usage limit for search" in result["messages"][-1].content

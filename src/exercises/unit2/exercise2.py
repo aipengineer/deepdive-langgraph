@@ -1,30 +1,28 @@
-from typing import Annotated, Optional, Dict, List
+from typing import Annotated, TypedDict
 
 from langchain_core.messages import (
     AIMessage,
-    ChatMessage,
-    HumanMessage,
-    SystemMessage,
-    ToolMessage,
 )
 from langchain_openai import ChatOpenAI
-from langgraph.graph import END, START, StateGraph
+from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
-from typing_extensions import TypedDict
+
 
 # Define the state for the agent
 class State(TypedDict):
     messages: Annotated[list, add_messages]
-    available_tools: List[ToolNode]
-    tool_usage: Dict[str, int]
-    rate_limits: Dict[str, int]  # Rate limit per tool (calls per conversation)
+    available_tools: list[ToolNode]
+    tool_usage: dict[str, int]
+    rate_limits: dict[str, int]  # Rate limit per tool (calls per conversation)
+
 
 # Initialize the LLM
 llm = ChatOpenAI(model="gpt-4")
 
 # Build the graph
 graph_builder = StateGraph(State)
+
 
 def llm_node(state: State) -> State:
     """
@@ -46,6 +44,7 @@ def llm_node(state: State) -> State:
         "tool_code": None,
     }
 
+
 def tool_selection_node(state: State) -> State:
     """
     This node selects the appropriate tool based on the tool_code in the state.
@@ -63,11 +62,10 @@ def tool_selection_node(state: State) -> State:
     # - If the tool can be used, update tool_usage and return the ToolMessage
 
     return {
-        "messages": [
-            AIMessage(content="I'm sorry, I can't use that tool right now.")
-        ],
+        "messages": [AIMessage(content="I'm sorry, I can't use that tool right now.")],
         "tool_code": None,
     }
+
 
 # Define your tool functions here (search, math, weather)
 # Each tool function should take in a State and return a State
