@@ -33,6 +33,8 @@ from langchain_core.tools import tool
 from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 
+from src.config import settings
+
 
 # First, implement these tool definitions
 @tool

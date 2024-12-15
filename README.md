@@ -14,6 +14,22 @@ A comprehensive 3-hour hands-on tutorial designed to teach the fundamentals of L
 - UV for environment management
 - Ruff for code formatting and linting
 
+## Environment Setup
+
+This project uses environment variables for configuration. To set up:
+
+1. Copy `.env.template` to `.env`:
+   ```bash
+   cp .env.template .env
+   ```
+
+2. Edit `.env` and fill in your API keys:
+   - OPENAI_API_KEY: Your OpenAI API key
+   - TAVILY_API_KEY: Your Tavily API key
+   - Optional: LANGSMITH_API_KEY and other configuration
+
+3. The `.env` file is ignored by git to keep your keys secure
+
 ## Tutorial Structure
 The tutorial is divided into 4 units, each building upon the previous one. Each unit contains:
 - Conceptual introduction (10-15 minutes)
