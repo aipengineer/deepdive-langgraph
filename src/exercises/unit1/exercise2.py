@@ -7,10 +7,10 @@
 # - Implement a configurable message window size
 # - Add metadata to messages (timestamps, roles, etc.)
 
-from typing import Annotated
+from typing import Annotated, TypedDict
 
 from langchain_core.messages import BaseMessage
-from langgraph.graph import StateGraph
+from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 
 

@@ -1,62 +1,64 @@
-from langchain_core.messages import ChatMessage, HumanMessage
+import logging
 
-# Import the graph from the exercise file
-from src.exercises.unit2.exercise3 import graph
-
-
-def test_exercise3():
-    # Test that the chat bot is able to respond to the user coherently
-    # We can invoke the graph with a human message
-    result = graph.invoke(
-        {
-            "messages": [HumanMessage(content="Hello!")],
-            "pending_tools": [],
-            "results": {},
-            "errors": {},
-            "tool_code": None,
-        }
-    )
-    # The result should be a dict
-    assert isinstance(result, dict)
-    # The result should have a key "messages"
-    assert "messages" in result
-    # The messages should be a list
-    assert isinstance(result["messages"], list)
-    # The list should not be empty
-    assert len(result["messages"]) > 0
-    # The last message should be a ChatMessage
-    assert isinstance(result["messages"][-1], ChatMessage)
-    # The message content should not be empty
-    assert result["messages"][-1].content
+# The logger is used to check that the nodes
+# are doing the right work
+logger = logging.getLogger(__name__)
 
 
-# Test the correctness of the execution
-def test_exercise3_correctness():
-    # Test the executor with valid tool calls
-    tool_inputs = [
-        {"destination": "New York"},
-        {"location": "London"},
-        {"pickup_location": "Paris"},
-    ]
-    results = executor.execute(tool_inputs)
-    assert results == {
-        "search_flights": "Flights to New York",
-        "search_hotels": "Hotels in London",
-        "search_car_rentals": "Car rentals in Paris",
-    }
-
-
-# Test the error handling capability
-def test_exercise3_error_handling():
-    # Test the executor with one tool raising an exception
-    tool_inputs = [
-        {"destination": "New York"},
-        {"location": "London"},
-        {"pickup_location": 123},  # This will raise a TypeError
-    ]
-    results = executor.execute(tool_inputs)
-    assert "search_flights" in results
-    assert "search_hotels" in results
-    assert "search_car_rentals" in results
-    assert isinstance(results["search_car_rentals"], str)
-    assert results["search_car_rentals"].startswith("Error:")
+def test_exercise_2_3(student_submission):
+    """Check that the student has implemented the parallel tool executor correctly."""
+    try:
+        graph = student_submission.graph
+    except AttributeError:
+        # Try to be slightly more robust in case the student forgets to name it 'graph'
+        graph = student_submission
+    # For this exercise, the student doesn't need to provide any inputs
+    # (we will inject them ourselves)
+    inputs = {}
+    for step in graph.stream(inputs, return_all=True, stream_mode="debug"):
+        for name, state in step.items():
+            logger.debug(f"Checking step: {name}")
+            if name == "parallel_executor":
+                if not state.get("pending_tools"):
+                    logging.debug("First time, no pending tools")
+                    assert state["pending_tools"] == [
+                        {
+                            "tool_name": "TavilySearchResults",
+                            "args": {"query": "capital of France"},
+                        },
+                        {"tool_name": "LLMMathChain", "args": "2 + 2"},
+                        {
+                            "tool_name": "WeatherSearchTool",
+                            "args": {"query": "weather in London"},
+                        },
+                    ]
+                    assert state["results"] == {}
+                    assert state["errors"] == {}
+                else:
+                    logging.debug("Second time, should have results and/or errors")
+                    assert len(state["results"]) + len(state["errors"]) == 3
+            elif name == "result_aggregator":
+                logging.debug("Checking result aggregator")
+                # Check that the results are in the messages
+                for tool_name, result in state["results"].items():
+                    assert any(
+                        tool_name in message.content and str(result) in message.content
+                        for message in state["messages"]
+                    )
+            elif name == "error_handler":
+                logging.debug("Checking error handler")
+                # Check that the errors are in the messages
+                for tool_name, error in state["errors"].items():
+                    assert any(
+                        tool_name in message.content and error in message.content
+                        for message in state["messages"]
+                    )
+            else:
+                raise ValueError(f"Unknown step: {name}")
+        # For debugging, you can view the full execution in the LangSmith app at the
+        # provided URL
+        # print(f"Step: {step}")
+    # Check that the final output is in the correct format
+    # (for this exercise, the format is unimportant)
+    final_output = graph.invoke(inputs)
+    assert final_output

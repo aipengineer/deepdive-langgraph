@@ -1,87 +1,57 @@
-from typing import Annotated, TypedDict
+# UNIT 2: Building Agents with LangGraph
 
-from langchain_core.messages import (
-    AIMessage,
-)
-from langchain_openai import ChatOpenAI
-from langgraph.graph import START, StateGraph
+# Exercise 2.2 - "Multi-Tool Agent"
+# Requirements:
+# - Integrate multiple tools (search, math, weather)
+# - Implement tool selection logic
+# - Add tool usage constraints (rate limits, usage quotas)
+# - Include tool usage explanations to users
+
+from typing import Annotated, Any
+
+from langchain_core.messages import BaseMessage
+from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode, tools_condition
 
 
-# Define the state for the agent
 class State(TypedDict):
-    messages: Annotated[list, add_messages]
-    available_tools: list[ToolNode]
+    messages: Annotated[list[BaseMessage], add_messages]
+    available_tools: list[Any]
     tool_usage: dict[str, int]
-    rate_limits: dict[str, int]  # Rate limit per tool (calls per conversation)
+    rate_limits: dict[str, Any]
 
 
-# Initialize the LLM
-llm = ChatOpenAI(model="gpt-4")
-
-# Build the graph
-graph_builder = StateGraph(State)
+def tool_selector(state: State) -> State:
+    """This is a stub, you should implement this yourself."""
+    pass  # Implement the logic for selecting the appropriate tool
 
 
 def llm_node(state: State) -> State:
-    """
-    This node is executed whenever the graph is invoked.
-    It takes the current graph state, calls an LLM, and returns a new state.
-    This includes deciding which tool to use (if any) and updating the tool_code.
-    """
-    messages = state["messages"]
-    tool_code = state.get("tool_code")  # Tool code from previous step (if any)
-
-    # TODO: Implement LLM call logic here
-    # - Use the last message in the state as the prompt
-    # - Include tool_code (if available) to continue multi-tool sequences
-    # - If a tool is suggested by the LLM, update tool_code in the returned state
-    # - Handle LLM API errors gracefully
-
-    return {
-        "messages": [AIMessage(content="I'm sorry, I don't understand.")],
-        "tool_code": None,
-    }
+    """This is a stub, you should implement this yourself."""
+    pass  # Implement the logic for the LLM node with tool binding
 
 
-def tool_selection_node(state: State) -> State:
-    """
-    This node selects the appropriate tool based on the tool_code in the state.
-    It also enforces rate limits and updates tool usage.
-    """
-    tool_code = state["tool_code"]
-    available_tools = state["available_tools"]
-    tool_usage = state["tool_usage"]
-    rate_limits = state["rate_limits"]
-
-    # TODO: Implement tool selection and rate limiting logic here
-    # - Identify the correct tool based on tool_code
-    # - Check if the tool's rate limit has been reached
-    # - If rate limit is exceeded, return an appropriate message to the user
-    # - If the tool can be used, update tool_usage and return the ToolMessage
-
-    return {
-        "messages": [AIMessage(content="I'm sorry, I can't use that tool right now.")],
-        "tool_code": None,
-    }
+def tool_executor(state: State) -> State:
+    """This is a stub, you should implement this yourself."""
+    pass  # Implement the logic for executing the selected tool
 
 
-# Define your tool functions here (search, math, weather)
-# Each tool function should take in a State and return a State
-# Ensure each tool function updates the "messages" key in the state with a ToolMessage
-# containing the tool's output
+def result_processor(state: State) -> State:
+    """This is a stub, you should implement this yourself."""
+    pass  # Implement the logic for processing tool results
 
-# TODO: Implement at least three tool functions (search, math, weather)
 
-# Add nodes to the graph
+# Initialize the graph
+graph_builder = StateGraph(State)
+
+# Add the nodes
+graph_builder.add_node("tool_selector", tool_selector)
 graph_builder.add_node("llm", llm_node)
-graph_builder.add_node("tool_selection", tool_selection_node)
-# TODO: Add nodes for your tool functions
+graph_builder.add_node("tool_executor", tool_executor)
+graph_builder.add_node("result_processor", result_processor)
 
-# Add edges
-graph_builder.add_edge(START, "llm")
-graph_builder.add_conditional_edges("llm", tools_condition)
-graph_builder.add_edge("tool_selection", "llm")  # Return to LLM after tool use
+# Add the edges
+graph_builder.add_edge(START, "tool_selector")
+# You must implement the edges for LLM node, tool execution, and result processing
 
 graph = graph_builder.compile()

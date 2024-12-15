@@ -1,204 +1,103 @@
-from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
-from typing import Annotated, Any, TypedDict
+# UNIT 2: Building Agents with LangGraph
 
-from langchain_core.messages import (
-    AIMessage,
-    ChatMessage,
-    HumanMessage,
-    SystemMessage,
-    ToolMessage,
-)
-from langchain_core.tools import tool
-from langchain_openai import ChatOpenAI
-from langgraph.graph import START, StateGraph
+# Exercise 2.3 - "Parallel Tool Executor"
+# Requirements:
+# - Implement parallel tool execution
+# - Add result aggregation logic
+# - Implement proper error handling for partial failures
+# - Include progress reporting
+
+import asyncio
+from typing import Annotated, Any
+
+from langchain_core.messages import BaseMessage, HumanMessage
+from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
-from langgraph.prebuilt import tools_condition
 
 
-# Define the state for the agent
 class State(TypedDict):
-    messages: Annotated[list, add_messages]
-    pending_tools: list[ToolCall]
-    results: dict[str, ToolResult]
+    messages: Annotated[list[BaseMessage], add_messages]
+    pending_tools: list[dict]
+    results: dict[str, Any]
     errors: dict[str, str]
-    tool_code: str | None
 
 
-# Initialize the LLM
-llm = ChatOpenAI(model="gpt-4o")
+async def execute_tool(tool_call: dict) -> tuple[str, Any]:
+    """Helper function to execute a single tool asynchronously."""
+    tool_name = tool_call["tool_name"]
+    tool = globals()[tool_name]()  # Instantiate the tool
+    try:
+        if tool_name == "WeatherSearchTool":
+            result = await asyncio.to_thread(tool.run, tool_call["args"]["query"])
+        else:
+            result = await asyncio.to_thread(tool.run, tool_call["args"])
+        return tool_name, result
+    except Exception as e:
+        return tool_name, f"Error: {e}"
 
 
-# Initialize the tools
-@tool
-def search_flights(destination: str) -> str:
-    """Searches for flights to the given destination."""
-    return f"Flights to {destination}"
+async def parallel_executor(state: State) -> State:
+    """This is a stub, you should implement this yourself."""
+    # Implement the logic for parallel tool execution
+    if not state.get("pending_tools"):
+        return {
+            "messages": [],
+            "pending_tools": [
+                {
+                    "tool_name": "TavilySearchResults",
+                    "args": {"query": "capital of France"},
+                },
+                {"tool_name": "LLMMathChain", "args": "2 + 2"},
+                {
+                    "tool_name": "WeatherSearchTool",
+                    "args": {"query": "weather in London"},
+                },
+            ],
+            "results": {},
+            "errors": {},
+        }
+    else:
+        tasks = [execute_tool(tool_call) for tool_call in state["pending_tools"]]
+        results = await asyncio.gather(*tasks)
+        for tool_name, result in results:
+            if "Error:" in result:
+                state["errors"][tool_name] = result
+            else:
+                state["results"][tool_name] = result
+        return state
 
 
-@tool
-def search_hotels(location: str) -> str:
-    """Searches for hotels in the given location."""
-    return f"Hotels in {location}"
+def result_aggregator(state: State) -> State:
+    """This is a stub, you should implement this yourself."""
+    # Implement the logic for aggregating tool results
+    for tool_name, result in state["results"].items():
+        state["messages"].append(HumanMessage(content=f"{tool_name}: {result}"))
+    return state
 
 
-@tool
-def search_car_rentals(pickup_location: str) -> str:
-    """Searches for car rentals in the given location."""
-    return f"Car rentals in {pickup_location}"
+def error_handler(state: State) -> State:
+    """This is a stub, you should implement this yourself."""
+    # Implement the logic for handling tool errors
+    for tool_name, error in state["errors"].items():
+        state["messages"].append(
+            HumanMessage(content=f"Error with {tool_name}: {error}")
+        )
+    return state
 
 
-# Build the graph
+# Initialize the graph
 graph_builder = StateGraph(State)
 
+# Add the nodes
+graph_builder.add_node("parallel_executor", parallel_executor)
+graph_builder.add_node("result_aggregator", result_aggregator)
+graph_builder.add_node("error_handler", error_handler)
 
-# This is the ParallelToolExecutor class you need to implement
-class ParallelToolExecutor:
-    def __init__(self, tools: list[Callable]):
-        """
-        Initializes a new instance of the ParallelToolExecutor class.
-
-        Args:
-            tools (List[Callable]): The list of tools to execute in parallel.
-        """
-        self.tools = tools
-
-    def execute(self, tool_inputs: list[dict[str, Any]]) -> dict[str, Any | str]:
-        """
-        Executes the tools in parallel with the given inputs.
-
-        Args:
-            tool_inputs (List[Dict[str, Any]]): A list of dictionaries where each dictionary contains the input arguments for a tool.
-
-        Returns:
-            Dict[str, Union[Any, str]]: A dictionary containing the results or error messages of each tool call.
-        """
-        results = {}
-        with ThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(tool, **tool_input)
-                for tool, tool_input in zip(self.tools, tool_inputs, strict=False)
-            ]
-            for i, future in enumerate(futures):
-                tool_name = self.tools[i].__name__
-                try:
-                    results[tool_name] = future.result()
-                except Exception as e:
-                    results[tool_name] = f"Error: {e}"
-        return results
-
-
-# Initialize the ParallelToolExecutor
-executor = ParallelToolExecutor(
-    tools=[search_flights, search_hotels, search_car_rentals]
+# Add the edges
+graph_builder.add_edge(START, "parallel_executor")
+graph_builder.add_edge("parallel_executor", "result_aggregator")
+graph_builder.add_edge(
+    "parallel_executor", "error_handler", condition=lambda state: state["errors"]
 )
-
-
-def llm_node(state: State) -> dict[str, list[AIMessage]]:
-    """
-    This node is executed whenever the graph is invoked.
-    It takes in the current graph state, calls an LLM, and returns a new message to be added to the state.
-    """
-    messages = state["messages"]
-    tool_code = state["tool_code"]
-
-    # For this example, we will use the last message in the state as the message to prompt the LLM.
-    last_message = messages[-1]
-    if isinstance(last_message, HumanMessage):
-        # The LLM should be invoked with a ChatMessage, so we convert it.
-        if isinstance(last_message, ChatMessage):
-            chat_message = last_message
-        else:
-            chat_message = ChatMessage(content=last_message.content)
-
-        # This is the call to the LLM
-        try:
-            new_message = llm.invoke(
-                [
-                    SystemMessage(
-                        content=(
-                            "You are a customer support agent for an airline. "
-                            "Here are the tools you can use:\n"
-                            "- search_flights: Searches for flights.\n"
-                            "- update_ticket_to_new_flight: Updates a ticket to a new flight.\n"
-                            "- cancel_ticket: Cancels a ticket.\n"
-                            "- search_car_rentals: Searches for car rentals.\n"
-                            "- book_car_rental: Books a car rental.\n"
-                            "- update_car_rental: Updates a car rental.\n"
-                            "- cancel_car_rental: Cancels a car rental.\n"
-                            "- search_hotels: Searches for hotels.\n"
-                            "- book_hotel: Books a hotel.\n"
-                            "- update_hotel: Updates a hotel.\n"
-                            "- cancel_hotel: Cancels a hotel.\n"
-                            "- search_trip_recommendations: Searches for trip recommendations.\n"
-                            "- book_excursion: Books an excursion.\n"
-                            "- update_excursion: Updates an excursion.\n"
-                            "- cancel_excursion: Cancels an excursion.\n"
-                        )
-                    ),
-                    ChatMessage(
-                        content=f"You can optionally call a tool to assist the user. Here is the tool code:\n\n{tool_code}"
-                    ),
-                    chat_message,
-                ]
-            )
-        except Exception:
-            # Handle errors that may arise when calling the LLM API
-            new_message = AIMessage(
-                content="I'm sorry, I had a problem communicating with the LLM API. Please try again."
-            )
-
-    # If the last message was not a "HumanMessage", respond with a canned response.
-    else:
-        new_message = AIMessage(content="I'm sorry, I don't understand.")
-
-    # Append the LLM's response to the state
-    return {"messages": [new_message]}
-
-
-def search_tool(state: State) -> State:
-    """
-    Searches for flights, car rentals, hotels, and trip recommendations.
-    """
-    messages = state["messages"]
-    last_message = messages[-1]
-    try:
-        # For now, we will use a simple heuristic to classify the message
-        if "flight" in last_message.content:
-            tool_code = "search_flights()"
-        elif "car rental" in last_message.content:
-            tool_code = "search_car_rentals()"
-        elif "hotel" in last_message.content:
-            tool_code = "search_hotels()"
-        elif "trip recommendation" in last_message.content:
-            tool_code = "search_trip_recommendations()"
-        else:
-            tool_code = None
-    except Exception as e:
-        # If the last message is not a HumanMessage, we will raise an error.
-        raise ValueError(
-            f"The last message is not a HumanMessage, so it cannot be classified. Last message: {last_message}, Error: {e}"
-        )
-
-    if tool_code:
-        return {
-            "messages": [ToolMessage(content=f"Here are the results:\n\n{tool_code}")],
-            "tool_code": tool_code,
-        }
-    else:
-        return {
-            "messages": [AIMessage(content="I'm sorry, I can't help you with that.")],
-            "tool_code": None,
-        }
-
-
-graph_builder.add_node("llm", llm_node)
-graph_builder.add_node("search_tool", search_tool)
-
-# Add edges
-graph_builder.add_edge(START, "llm")
-graph_builder.add_conditional_edges("llm", tools_condition)
-# Any time a tool is called, we return to the llm to decide the next step
-graph_builder.add_edge("search_tool", "llm")
 
 graph = graph_builder.compile()

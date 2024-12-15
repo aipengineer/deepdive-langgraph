@@ -7,7 +7,7 @@
 # - Add at least 3 different response paths
 # - Implement proper handling for ambiguous cases
 
-from typing import Annotated
+from typing import Annotated, TypedDict
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph import StateGraph

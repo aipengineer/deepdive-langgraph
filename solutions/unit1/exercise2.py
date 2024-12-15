@@ -8,10 +8,10 @@
 # - Add metadata to messages (timestamps, roles, etc.)
 
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, TypedDict
 
 from langchain_core.messages import BaseMessage, HumanMessage
-from langgraph.graph import StateGraph
+from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 
 
@@ -44,7 +44,9 @@ def llm_response(state: State) -> State:
                         content="How are you?",
                         metadata={"timestamp": datetime.now(), "role": "user"},
                     )
-                ]
+                ],
+                "summary": "",
+                "window_size": 3,
             }
         elif last_message.content == "How are you?":
             return {
@@ -53,7 +55,9 @@ def llm_response(state: State) -> State:
                         content="Goodbye!",
                         metadata={"timestamp": datetime.now(), "role": "user"},
                     )
-                ]
+                ],
+                "summary": "",
+                "window_size": 3,
             }
     return state
 

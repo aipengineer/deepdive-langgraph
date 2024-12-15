@@ -7,10 +7,10 @@
 # - Implement proper input/output message handling
 # - Include basic error handling for API failures
 
-from typing import Annotated
+from typing import Annotated, TypedDict
 
 from langchain_core.messages import BaseMessage
-from langgraph.graph import StateGraph
+from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 
 
