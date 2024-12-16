@@ -10,6 +10,7 @@ Requirements:
 """
 
 import json
+import os
 from typing import Annotated, Any, TypedDict
 from langchain_community.tools import TavilySearchResults
 from langchain_core.messages import BaseMessage, HumanMessage
@@ -19,10 +20,15 @@ from langgraph.graph.message import add_messages
 from src.config import settings
 
 
+# Set Tavily API key in environment
+os.environ["TAVILY_API_KEY"] = settings.tavily_api_key
+
+# Initialize tool once at module level
+tavily_tool = TavilySearchResults()
+
+
 class State(TypedDict):
-    """
-State
-for our simple tool user."""
+    """State for our simple tool user."""
     messages: Annotated[list[BaseMessage], add_messages]
     tool_calls: list[dict]
     tool_outputs: list[Any]
@@ -49,30 +55,24 @@ def llm_node(state: State) -> State:
                 }
             ]
         }
-    else:
-        return {"messages": [HumanMessage(content="Thanks for the information!")]}
+
+    return {"messages": [HumanMessage(content="Thanks for the information!")]}
 
 
 def tool_executor(state: State) -> State:
     """Execute the selected tool."""
     if not state.get("tool_calls"):
-        return {
-            "tool_outputs": []  # Ensure we always return tool_outputs
-        }
+        return {"tool_outputs": []}
 
     tool_call = state["tool_calls"][-1]
     if tool_call["tool_name"] == "TavilySearchResults":
-        # Initialize tool with API key from settings
-        tool = TavilySearchResults(tavily_api_key=settings.tavily_api_key)
         try:
-            output = tool.invoke({"query": tool_call["args"]["query"]})
+            output = tavily_tool.invoke(tool_call["args"])
             return {"tool_outputs": [json.dumps(output)]}
         except Exception as e:
             return {"tool_outputs": [json.dumps({"error": str(e)})]}
 
-    return {
-        "tool_outputs": []
-    }
+    return {"tool_outputs": []}
 
 
 def result_processor(state: State) -> State:
@@ -112,6 +112,7 @@ def create_agent() -> StateGraph:
     graph.set_entry_point("llm")
 
     return graph.compile()
+
 
 # Create the graph
 graph = create_agent()
