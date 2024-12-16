@@ -1,6 +1,13 @@
 """
-Tests for Exercise 2.2 - Multi-Tool Agent Solution
+Tests for Exercise 2.2 - Multi-Tool Agent
+
+This test suite verifies:
+1. Individual tool functionality
+2. Tool selection and execution
+3. Rate limiting
+4. Full conversation flow
 """
+
 import logging
 from typing import Any
 
@@ -14,12 +21,11 @@ logger = logging.getLogger(__name__)
 
 @pytest.mark.asyncio
 async def test_calculator(student_submission: Any) -> None:
-    """Test the calculator tool implementation."""
+    """Test calculator functionality and integration."""
     calculator = student_submission.calculator
     tool_executor = student_submission.tool_executor
     State = student_submission.State
 
-    # Test basic arithmetic through the full flow
     calc_state: State = {
         "messages": [HumanMessage(content="Calculate 2 + 2")],
         "available_tools": [calculator],
@@ -45,7 +51,7 @@ async def test_calculator(student_submission: Any) -> None:
 
 @pytest.mark.asyncio
 async def test_weather(student_submission: Any) -> None:
-    """Test the weather tool implementation."""
+    """Test weather tool functionality and integration."""
     check_weather = student_submission.check_weather
     tool_executor = student_submission.tool_executor
     State = student_submission.State
@@ -66,7 +72,7 @@ async def test_weather(student_submission: Any) -> None:
 
 @pytest.mark.asyncio
 async def test_full_conversation(student_submission: Any) -> None:
-    """Test a complete conversation flow."""
+    """Test complete conversation flow."""
     graph = student_submission.graph
 
     # Test calculator usage
