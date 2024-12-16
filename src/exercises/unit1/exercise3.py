@@ -34,8 +34,8 @@ START -> classifier -> appropriate_response -> END
 
 from typing import Annotated, TypedDict
 
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
-from langgraph.graph import START, END, StateGraph
+from langchain_core.messages import BaseMessage
+from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
 
 
@@ -48,6 +48,7 @@ class State(TypedDict):
         classification: Type of message determined by classifier
         confidence: Confidence score for the classification
     """
+
     messages: Annotated[list[BaseMessage], add_messages]
     classification: str
     confidence: float
@@ -128,4 +129,4 @@ graph = None  # Replace with proper compilation
 default_input = {"messages": [], "classification": "", "confidence": 0.0}
 
 # Make variables available for testing
-__all__ = ["graph", "default_input"]
+__all__ = ["default_input", "graph"]

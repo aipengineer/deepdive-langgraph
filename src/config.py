@@ -1,6 +1,6 @@
 # src/config.py
 
-from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,17 +18,14 @@ class Settings(BaseSettings):
     tavily_api_key: str
 
     # Optional LangSmith configuration
-    langsmith_api_key: Optional[str] = None
-    langsmith_project: Optional[str] = "deepdive-langgraph"
+    langsmith_api_key: str | None = None
+    langsmith_project: str | None = "deepdive-langgraph"
 
     # Environment configuration
     environment: str = "development"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
 
 

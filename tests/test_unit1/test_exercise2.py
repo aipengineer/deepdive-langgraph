@@ -27,7 +27,7 @@ def test_exercise_1_2(student_submission):
 
     # Check the conversation flow
     expected_sequence = ["Hello!", "How are you?", "Goodbye!"]
-    for msg, expected_content in zip(messages, expected_sequence):
+    for msg, expected_content in zip(messages, expected_sequence, strict=False):
         assert msg.content == expected_content
 
         # Check metadata

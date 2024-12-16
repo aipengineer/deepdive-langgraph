@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Annotated, TypedDict
 
 from langchain_core.messages import BaseMessage, HumanMessage
-from langgraph.graph import START, END, StateGraph
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
 
@@ -34,17 +34,17 @@ def llm_response(state: State) -> State:
         }
 
     last_message = state["messages"][-1]
-    response_map = {
-        "Hello!": "How are you?",
-        "How are you?": "Goodbye!"
-    }
+    response_map = {"Hello!": "How are you?", "How are you?": "Goodbye!"}
 
     if last_message.content in response_map:
         return {
             "messages": [
                 HumanMessage(
                     content=response_map[last_message.content],
-                    metadata={"timestamp": datetime.now().isoformat(), "role": "assistant"},
+                    metadata={
+                        "timestamp": datetime.now().isoformat(),
+                        "role": "assistant",
+                    },
                 )
             ],
             "summary": state["summary"],
@@ -57,7 +57,7 @@ def llm_response(state: State) -> State:
 def message_windowing(state: State) -> State:
     """Maintain a sliding window of recent messages."""
     if len(state["messages"]) > state["window_size"]:
-        state["messages"] = state["messages"][-state["window_size"]:]
+        state["messages"] = state["messages"][-state["window_size"] :]
     return state
 
 
@@ -91,12 +91,7 @@ graph_builder.add_edge("message_windowing", "summary_generation")
 
 # Add conditional edges based on conversation state
 graph_builder.add_conditional_edges(
-    "summary_generation",
-    should_end,
-    {
-        True: END,
-        False: "llm_response"
-    }
+    "summary_generation", should_end, {True: END, False: "llm_response"}
 )
 
 # Compile the graph
@@ -106,4 +101,4 @@ graph = graph_builder.compile()
 default_input = {"messages": [], "summary": "", "window_size": 3}
 
 # Make variables available for testing
-__all__ = ["graph", "default_input"]
+__all__ = ["default_input", "graph"]

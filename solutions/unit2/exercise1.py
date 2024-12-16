@@ -12,9 +12,10 @@ Requirements:
 import json
 import os
 from typing import Annotated, Any, TypedDict
+
 from langchain_community.tools import TavilySearchResults
 from langchain_core.messages import BaseMessage, HumanMessage
-from langgraph.graph import START, StateGraph, END
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
 from src.config import settings
@@ -28,6 +29,7 @@ tavily_tool = TavilySearchResults()
 
 class State(TypedDict):
     """State for our simple tool user."""
+
     messages: Annotated[list[BaseMessage], add_messages]
     tool_calls: list[dict]
     tool_outputs: list[Any]
@@ -90,11 +92,7 @@ def tool_executor(state: State) -> State:
 def result_processor(state: State) -> State:
     """Process tool execution results."""
     if not state.get("tool_outputs"):
-        return {
-            "messages": [],
-            "tool_calls": [],
-            "tool_outputs": []
-        }
+        return {"messages": [], "tool_calls": [], "tool_outputs": []}
 
     tool_output = state["tool_outputs"][-1]
     return {
@@ -119,23 +117,14 @@ graph_builder.add_edge("tool_executor", "result_processor")
 
 # Add conditional edges to either continue or end
 graph_builder.add_conditional_edges(
-    "result_processor",
-    should_end,
-    {
-        True: END,
-        False: "llm"
-    }
+    "result_processor", should_end, {True: END, False: "llm"}
 )
 
 # Compile the graph
 graph = graph_builder.compile()
 
 # Define default input with all required state fields
-default_input = {
-    "messages": [],
-    "tool_calls": [],
-    "tool_outputs": []
-}
+default_input = {"messages": [], "tool_calls": [], "tool_outputs": []}
 
 # Make variables available for testing
-__all__ = ["graph", "default_input"]
+__all__ = ["default_input", "graph"]

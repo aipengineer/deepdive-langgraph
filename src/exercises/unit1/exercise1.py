@@ -33,8 +33,8 @@ Requirements:
 
 from typing import Annotated, TypedDict
 
-from langchain_core.messages import BaseMessage, HumanMessage
-from langgraph.graph import START, END, StateGraph
+from langchain_core.messages import BaseMessage
+from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
 
 
@@ -46,6 +46,7 @@ class State(TypedDict):
         messages: A list of messages in the conversation.
                  Uses add_messages as a reducer to combine message lists.
     """
+
     messages: Annotated[list[BaseMessage], add_messages]
 
 
@@ -100,4 +101,4 @@ graph = None  # Replace with proper compilation
 default_input = {"messages": []}
 
 # Make variables available for testing
-__all__ = ["graph", "default_input"]
+__all__ = ["default_input", "graph"]

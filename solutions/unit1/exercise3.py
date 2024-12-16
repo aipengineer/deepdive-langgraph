@@ -9,8 +9,8 @@
 
 from typing import Annotated, TypedDict
 
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
-from langgraph.graph import START, END, StateGraph
+from langchain_core.messages import AIMessage, BaseMessage
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
 
@@ -29,19 +29,19 @@ def classifier_node(state: State) -> State:
         return {
             "messages": state["messages"],  # Keep existing messages
             "classification": "greeting",
-            "confidence": 0.9
+            "confidence": 0.9,
         }
     elif "help" in message.lower():
         return {
             "messages": state["messages"],  # Keep existing messages
             "classification": "help",
-            "confidence": 0.8
+            "confidence": 0.8,
         }
     else:
         return {
             "messages": state["messages"],  # Keep existing messages
             "classification": "unknown",
-            "confidence": 0.1
+            "confidence": 0.1,
         }
 
 
@@ -50,7 +50,7 @@ def response_node_1(state: State) -> State:
     return {
         "messages": [AIMessage(content="Hello there!")],
         "classification": state["classification"],
-        "confidence": state["confidence"]
+        "confidence": state["confidence"],
     }
 
 
@@ -59,7 +59,7 @@ def response_node_2(state: State) -> State:
     return {
         "messages": [AIMessage(content="How can I help you?")],
         "classification": state["classification"],
-        "confidence": state["confidence"]
+        "confidence": state["confidence"],
     }
 
 
@@ -68,7 +68,7 @@ def response_node_3(state: State) -> State:
     return {
         "messages": [AIMessage(content="I don't understand.")],
         "classification": state["classification"],
-        "confidence": state["confidence"]
+        "confidence": state["confidence"],
     }
 
 
@@ -103,8 +103,8 @@ graph_builder.add_conditional_edges(
     {
         "response_1": "response_1",
         "response_2": "response_2",
-        "response_3": "response_3"
-    }
+        "response_3": "response_3",
+    },
 )
 
 # Add edges from responses to END
@@ -119,4 +119,4 @@ graph = graph_builder.compile()
 default_input = {"messages": [], "classification": "", "confidence": 0.0}
 
 # Make variables available for testing
-__all__ = ["graph", "default_input"]
+__all__ = ["default_input", "graph"]

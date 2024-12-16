@@ -1,8 +1,8 @@
 import json
 import logging
-import pytest
 from typing import Any
-from langchain_core.messages import HumanMessage
+
+import pytest
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -35,7 +35,9 @@ async def test_exercise_2_1(student_submission: Any) -> None:
 
         # Track messages
         if "messages" in event:
-            seen_messages.extend(msg for msg in event["messages"] if msg not in seen_messages)
+            seen_messages.extend(
+                msg for msg in event["messages"] if msg not in seen_messages
+            )
 
             # Check initial message
             if len(seen_messages) == 1:
@@ -43,7 +45,7 @@ async def test_exercise_2_1(student_submission: Any) -> None:
                 assert seen_messages[0].content == "What is the capital of France?"
 
         # Track tool calls
-        if "tool_calls" in event and event["tool_calls"]:
+        if event.get("tool_calls"):
             call = event["tool_calls"][0]
             if call not in seen_tool_calls:
                 seen_tool_calls.append(call)
@@ -54,7 +56,7 @@ async def test_exercise_2_1(student_submission: Any) -> None:
                 }
 
         # Track tool outputs
-        if "tool_outputs" in event and event["tool_outputs"]:
+        if event.get("tool_outputs"):
             output = event["tool_outputs"][0]
             if output not in seen_tool_outputs:
                 seen_tool_outputs.append(output)
@@ -71,8 +73,7 @@ async def test_exercise_2_1(student_submission: Any) -> None:
 
     # Check final message content
     assert any(
-        "Thanks for the information!" in msg.content
-        for msg in seen_messages
+        "Thanks for the information!" in msg.content for msg in seen_messages
     ), "Should end with thank you message"
 
     # Verify we can get final output

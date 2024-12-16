@@ -10,7 +10,7 @@
 from typing import Annotated, TypedDict
 
 from langchain_core.messages import BaseMessage, HumanMessage
-from langgraph.graph import START, END, StateGraph
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
 
@@ -53,14 +53,7 @@ graph_builder.add_node("llm", llm_node)
 
 # Add the conditional edges
 graph_builder.add_edge(START, "llm")
-graph_builder.add_conditional_edges(
-    "llm",
-    should_end,
-    {
-        True: END,
-        False: "llm"
-    }
-)
+graph_builder.add_conditional_edges("llm", should_end, {True: END, False: "llm"})
 
 # Compile the graph
 graph = graph_builder.compile()
@@ -69,4 +62,4 @@ graph = graph_builder.compile()
 default_input = {"messages": []}
 
 # Make sure both the graph and default_input are available when importing
-__all__ = ["graph", "default_input"]
+__all__ = ["default_input", "graph"]

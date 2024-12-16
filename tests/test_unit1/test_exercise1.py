@@ -1,5 +1,4 @@
 import logging
-from typing import cast
 
 # The logger is used to check that the nodes are doing the right work
 logger = logging.getLogger(__name__)
@@ -24,7 +23,9 @@ def test_exercise_1_1(student_submission):
 
     # Check the conversation flow
     expected_sequence = ["Hello!", "How are you?", "Goodbye!"]
-    for actual, expected in zip(messages, expected_sequence):
-        assert actual.content == expected, f"Expected '{expected}' but got '{actual.content}'"
+    for actual, expected in zip(messages, expected_sequence, strict=False):
+        assert (
+            actual.content == expected
+        ), f"Expected '{expected}' but got '{actual.content}'"
 
     logger.info("Test passed successfully!")

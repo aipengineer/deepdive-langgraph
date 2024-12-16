@@ -25,12 +25,12 @@ Tips:
 - Use conditional edges to end the conversation properly
 """
 
-import json
 import os
 from typing import Annotated, Any, TypedDict
+
 from langchain_community.tools import TavilySearchResults
-from langchain_core.messages import BaseMessage, HumanMessage
-from langgraph.graph import START, StateGraph, END
+from langchain_core.messages import BaseMessage
+from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
 
 from src.config import settings
@@ -44,6 +44,7 @@ tavily_tool = TavilySearchResults()
 
 class State(TypedDict):
     """State for our simple tool user."""
+
     messages: Annotated[list[BaseMessage], add_messages]
     tool_calls: list[dict]
     tool_outputs: list[Any]
@@ -123,11 +124,7 @@ graph_builder = StateGraph(State)
 graph = graph_builder.compile()
 
 # 2. Define default input
-default_input = {
-    "messages": [],
-    "tool_calls": [],
-    "tool_outputs": []
-}
+default_input = {"messages": [], "tool_calls": [], "tool_outputs": []}
 
 # 3. Make variables available for testing
-__all__ = ["graph", "default_input"]
+__all__ = ["default_input", "graph"]

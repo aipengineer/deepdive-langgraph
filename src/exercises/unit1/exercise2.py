@@ -27,11 +27,10 @@ Requirements:
    - Connect nodes in the correct order
 """
 
-from datetime import datetime
 from typing import Annotated, TypedDict
 
-from langchain_core.messages import BaseMessage, HumanMessage
-from langgraph.graph import START, END, StateGraph
+from langchain_core.messages import BaseMessage
+from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
 
 
@@ -44,6 +43,7 @@ class State(TypedDict):
         summary: Current conversation summary
         window_size: Maximum number of messages to keep
     """
+
     messages: Annotated[list[BaseMessage], add_messages]
     summary: str
     window_size: int
@@ -130,4 +130,4 @@ graph = None  # Replace with proper compilation
 default_input = {"messages": [], "summary": "", "window_size": 3}
 
 # Make variables available for testing
-__all__ = ["graph", "default_input"]
+__all__ = ["default_input", "graph"]
