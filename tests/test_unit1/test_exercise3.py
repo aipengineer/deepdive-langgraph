@@ -1,31 +1,71 @@
 import logging
-
+from typing import Optional, Dict, Any
 from langchain_core.messages import HumanMessage
 
-# The logger is used to check that the nodes
-# are doing the right work
 logger = logging.getLogger(__name__)
+
+
+def verify_response(state: Dict[str, Any], input_text: str, expected_response: str,
+                    expected_classification: str, min_confidence: float) -> None:
+    """Helper function to verify responses."""
+    # Check message accumulation
+    assert len(state["messages"]) == 2, f"Expected 2 messages, got {len(state['messages'])}"
+
+    # Check message contents
+    assert state["messages"][0].content == input_text
+    assert state["messages"][1].content == expected_response
+
+    # Check classification and confidence
+    assert state["classification"] == expected_classification
+    assert state["confidence"] >= min_confidence
 
 
 def test_exercise_1_3(student_submission):
     """Check that the student has implemented the conditional router correctly."""
     try:
         graph = student_submission.graph
+        default_input = student_submission.default_input
     except AttributeError:
-        # Try to be slightly more robust in case the student forgets to name it 'graph'
         graph = student_submission
+        default_input = {"messages": [], "classification": "", "confidence": 0.0}
 
     # Test case 1: Greeting
-    inputs = {"messages": [HumanMessage(content="Hello")]}
-    state = graph.invoke(inputs)
-    assert state["messages"][-1].content == "Hello there!"
+    state = graph.invoke({
+        **default_input,
+        "messages": [HumanMessage(content="Hello")]
+    })
+    verify_response(
+        state=state,
+        input_text="Hello",
+        expected_response="Hello there!",
+        expected_classification="greeting",
+        min_confidence=0.8
+    )
 
-    # Test case 2: Help
-    inputs = {"messages": [HumanMessage(content="I need help")]}
-    state = graph.invoke(inputs)
-    assert state["messages"][-1].content == "How can I help you?"
+    # Test case 2: Help request
+    state = graph.invoke({
+        **default_input,
+        "messages": [HumanMessage(content="I need help")]
+    })
+    verify_response(
+        state=state,
+        input_text="I need help",
+        expected_response="How can I help you?",
+        expected_classification="help",
+        min_confidence=0.7
+    )
 
-    # Test case 3: Unknown
-    inputs = {"messages": [HumanMessage(content="Foo bar")]}
-    state = graph.invoke(inputs)
-    assert state["messages"][-1].content == "I don't understand."
+    # Test case 3: Unknown input
+    state = graph.invoke({
+        **default_input,
+        "messages": [HumanMessage(content="Foo bar")]
+    })
+    verify_response(
+        state=state,
+        input_text="Foo bar",
+        expected_response="I don't understand.",
+        expected_classification="unknown",
+        min_confidence=0.0  # Unknown messages have low confidence
+    )
+
+    logger.info("All routing tests passed successfully!")
