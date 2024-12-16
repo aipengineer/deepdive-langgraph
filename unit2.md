@@ -10,22 +10,22 @@ In the world of LLMs, an agent is an LLM (or a combination of LLMs and other sys
 
 LangGraph offers several benefits for building LLM agents:
 
-*   It allows for easy integration of tools into your agent workflows. [cite: 1581, 1582, 1583]
-*   It provides a structured approach to manage the agent's state and actions. [cite: 1068, 1069, 1070]
-*   It supports building complex agents with multiple tools and decision points. [cite: 1130, 1131]
-*   It enables parallel execution of tools, speeding up task completion. [cite: 1519, 1520, 1521]
-*   It provides mechanisms to handle tool errors and retry failed calls. [cite: 1109, 1110, 1111]
+*   It allows for easy integration of tools into your agent workflows.
+*   It provides a structured approach to manage the agent's state and actions.
+*   It supports building complex agents with multiple tools and decision points.
+*   It enables parallel execution of tools, speeding up task completion.
+*   It provides mechanisms to handle tool errors and retry failed calls.
 
 **Key Concepts**
 
 Before we start building agents, let's review some important concepts:
 
-*   **Tools:** These are the external systems or APIs that your agent can use to gather information or take actions. Examples include search engines, web scrapers, calculators, and more. [cite: 1494, 1495, 1496]
-*   **Tool Integration:** This is the process of connecting your agent to external tools, allowing it to call them when needed. [cite: 1102, 1103, 1104]
-*   **Tool Calling:** This is the act of the agent invoking a tool with specific arguments. [cite: 1105, 1106, 1107]
-*   **Tool Validation:** This is the process of ensuring that the tool arguments provided by the agent are valid and conform to the tool's API. [cite: 1719, 1720, 1721]
-*   **Parallel Execution:** This is the ability to execute multiple tools simultaneously, improving the agent's efficiency. [cite: 1519, 1520, 1521]
-*   **Error Handling:** This involves managing tool failures, retrying failed calls, and providing informative error messages to the user. [cite: 1109, 1110, 1111]
+*   **Tools:** These are the external systems or APIs that your agent can use to gather information or take actions. Examples include search engines, web scrapers, calculators, and more.
+*   **Tool Integration:** This is the process of connecting your agent to external tools, allowing it to call them when needed.
+*   **Tool Calling:** This is the act of the agent invoking a tool with specific arguments.
+*   **Tool Validation:** This is the process of ensuring that the tool arguments provided by the agent are valid and conform to the tool's API.
+*   **Parallel Execution:** This is the ability to execute multiple tools simultaneously, improving the agent's efficiency.
+*   **Error Handling:** This involves managing tool failures, retrying failed calls, and providing informative error messages to the user.
 
 **Let's Get Building**
 
