@@ -1,7 +1,6 @@
 import logging
+from datetime import datetime
 
-# The logger is used to check that the nodes
-# are doing the right work
 logger = logging.getLogger(__name__)
 
 
@@ -9,44 +8,50 @@ def test_exercise_1_2(student_submission):
     """Check that the student has implemented the message memory correctly."""
     try:
         graph = student_submission.graph
+        default_input = student_submission.default_input
     except AttributeError:
         # Try to be slightly more robust in case the student forgets to name it 'graph'
         graph = student_submission
-    # For this exercise, the student doesn't need to provide any inputs
-    # (we will inject them ourselves)
-    inputs = {}
-    for step in graph.stream(inputs, return_all=True, stream_mode="debug"):
-        for name, state in step.items():
-            logger.debug(f"Checking step: {name}")
-            if name == "llm_response":
-                if not state.get("messages"):
-                    logging.debug("First time, no messages")
-                    assert len(state["messages"]) == 1
-                    assert state["messages"][0].content == "Hello!"
-                    assert state["summary"] == ""
-                    assert state["window_size"] == 3
-                else:
-                    logging.debug("Second time, should have messages now")
-                    assert len(state["messages"]) == 1
-                    if state["messages"][0].content == "Hello!":
-                        assert state["messages"][0].content == "How are you?"
-                    elif state["messages"][0].content == "How are you?":
-                        assert state["messages"][0].content == "Goodbye!"
-                    else:
-                        raise AssertionError("Unexpected message content")
-            elif name == "message_windowing":
-                assert len(state["messages"]) <= state["window_size"]
-            elif name == "summary_generation":
-                if len(state["messages"]) > 2:
-                    assert state["summary"] == "Conversation summary: ..."
-                else:
-                    assert state["summary"] == ""
-            else:
-                raise ValueError(f"Unknown step: {name}")
-        # For debugging, you can view the full execution in the LangSmith app at the
-        # provided URL
-        # print(f"Step: {step}")
-    # Check that the final output is in the correct format
-    # (for this exercise, the format is unimportant)
-    final_output = graph.invoke(inputs)
-    assert final_output
+        default_input = {"messages": [], "summary": "", "window_size": 3}
+
+    # Use the provided default input
+    final_output = graph.invoke(default_input)
+
+    # Verify the final state
+    assert "messages" in final_output
+    assert "summary" in final_output
+    assert "window_size" in final_output
+
+    messages = final_output["messages"]
+    assert len(messages) == 3, "Expected exactly 3 messages in the conversation"
+
+    # Check the conversation flow
+    expected_sequence = ["Hello!", "How are you?", "Goodbye!"]
+    for msg, expected_content in zip(messages, expected_sequence):
+        assert msg.content == expected_content
+
+        # Check metadata
+        assert "timestamp" in msg.metadata
+        assert "role" in msg.metadata
+        # Verify timestamp is in ISO format and parseable
+        try:
+            datetime.fromisoformat(msg.metadata["timestamp"])
+        except ValueError:
+            raise AssertionError("Timestamp should be in ISO format")
+
+        # Verify proper role assignment
+        assert msg.metadata["role"] in ["user", "assistant"]
+
+    # Verify window size enforcement
+    assert len(messages) <= final_output["window_size"]
+
+    # Verify summary generation
+    if len(messages) > 2:
+        assert final_output["summary"].startswith("Conversation summary:")
+        # Verify all messages are included in summary
+        for msg in messages:
+            assert msg.content in final_output["summary"]
+    else:
+        assert final_output["summary"] == ""
+
+    logger.info("All checks passed successfully!")
