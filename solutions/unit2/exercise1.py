@@ -19,7 +19,6 @@ from langgraph.graph.message import add_messages
 
 from src.config import settings
 
-
 # Set Tavily API key in environment
 os.environ["TAVILY_API_KEY"] = settings.tavily_api_key
 
@@ -32,6 +31,15 @@ class State(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     tool_calls: list[dict]
     tool_outputs: list[Any]
+
+
+def should_end(state: State) -> bool:
+    """Determine if we should end the conversation."""
+    if not state.get("messages"):
+        return False
+
+    last_message = state["messages"][-1].content
+    return "Thanks for the information!" in last_message
 
 
 def llm_node(state: State) -> State:
@@ -56,7 +64,11 @@ def llm_node(state: State) -> State:
             ]
         }
 
-    return {"messages": [HumanMessage(content="Thanks for the information!")]}
+    return {
+        "messages": [HumanMessage(content="Thanks for the information!")],
+        "tool_calls": [],
+        "tool_outputs": [],
+    }
 
 
 def tool_executor(state: State) -> State:
@@ -92,27 +104,38 @@ def result_processor(state: State) -> State:
     }
 
 
-def create_agent() -> StateGraph:
-    """Create and configure the agent graph."""
-    # Initialize graph
-    graph = StateGraph(State)
+# Initialize the graph
+graph_builder = StateGraph(State)
 
-    # Add nodes
-    graph.add_node("llm", llm_node)
-    graph.add_node("tool_executor", tool_executor)
-    graph.add_node("result_processor", result_processor)
+# Add nodes
+graph_builder.add_node("llm", llm_node)
+graph_builder.add_node("tool_executor", tool_executor)
+graph_builder.add_node("result_processor", result_processor)
 
-    # Add edges
-    graph.add_edge(START, "llm")
-    graph.add_edge("llm", "tool_executor")
-    graph.add_edge("tool_executor", "result_processor")
-    graph.add_edge("result_processor", "llm")
+# Add edges
+graph_builder.add_edge(START, "llm")
+graph_builder.add_edge("llm", "tool_executor")
+graph_builder.add_edge("tool_executor", "result_processor")
 
-    # Set entry point
-    graph.set_entry_point("llm")
+# Add conditional edges to either continue or end
+graph_builder.add_conditional_edges(
+    "result_processor",
+    should_end,
+    {
+        True: END,
+        False: "llm"
+    }
+)
 
-    return graph.compile()
+# Compile the graph
+graph = graph_builder.compile()
 
+# Define default input with all required state fields
+default_input = {
+    "messages": [],
+    "tool_calls": [],
+    "tool_outputs": []
+}
 
-# Create the graph
-graph = create_agent()
+# Make variables available for testing
+__all__ = ["graph", "default_input"]
